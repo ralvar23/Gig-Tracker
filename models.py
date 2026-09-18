@@ -10,7 +10,7 @@ class SetlistCreate(BaseModel):
 
 class SongCreate(BaseModel):
     title: str
-    artist: str
+    artist: Optional[str] = None
     lyrics: Optional[str] = None
     key: Optional[str] = None
     tempo: Optional[int] = None
@@ -21,3 +21,4 @@ class SongCreate(BaseModel):
     crowd_response_rating: Optional[str] = None
     difficulty: Optional[int] = None
     tags: Optional[str] = None
+    metadata_verified: bool = False
