@@ -1,18 +1,19 @@
 CREATE TABLE IF NOT EXISTS songs(
     id INTEGER PRIMARY KEY, 
     title TEXT NOT NULL, 
-    artist TEXT NOT NULL, 
+    artist TEXT, 
     lyrics TEXT,
     key TEXT, 
     tempo INTEGER,
     duration_seconds INTEGER,
     genre TEXT,
-    energy_level INTEGER,
+    energy_level INTEGER, -- 1-10
     times_played INTEGER NOT NULL DEFAULT 0,
     last_played_date TEXT,
-    crowd_response_rating INTEGER,
-    difficulty INTEGER,
+    crowd_response_rating INTEGER, -- 1-10
+    difficulty INTEGER, -- 1-10
     tags TEXT,
+    metadata_verified INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 
 CREATE TABLE IF NOT EXISTS setlists(

@@ -8,4 +8,16 @@ class SetlistCreate(BaseModel):
     notes: Optional[str] = None
     user_id: int
 
-
+class SongCreate(BaseModel):
+    title: str
+    artist: str
+    lyrics: Optional[str] = None
+    key: Optional[str] = None
+    tempo: Optional[int] = None
+    duration_seconds: Optional[int] = None
+    genre: Optional[str] = None
+    energy_level: Optional[int] = None
+    last_played_date: Optional[str] = None
+    crowd_response_rating: Optional[str] = None
+    difficulty: Optional[int] = None
+    tags: Optional[str] = None
