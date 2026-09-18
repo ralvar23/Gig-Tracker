@@ -22,3 +22,8 @@ class SongCreate(BaseModel):
     difficulty: Optional[int] = None
     tags: Optional[str] = None
     metadata_verified: bool = False
+
+class SetlistSongCreate(BaseModel):
+    setlist_id: int
+    song_id: int
+    position: Optional[int] = None

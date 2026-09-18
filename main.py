@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import models as models
 import database as database
-
+import sqlite3
 app = FastAPI()
 
 #landing page
@@ -205,3 +205,62 @@ def update_times_played(song_id: int):
     conn.close()
 
     return {"detail": f"Song {song_id} times_played succesfully updated"}
+
+
+
+@app.post("/setlist_songs")
+def add_song_to_setlist(setlist_song: models.SetlistSongCreate):
+    conn = database.get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM setlists WHERE id=?", (setlist_song.setlist_id,))
+    setlist = cursor.fetchone()
+    if setlist is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Setlist  not found")
+    
+    cursor.execute("SELECT * FROM songs WHERE id=?", (setlist_song.song_id,))
+    song = cursor.fetchone()
+    if song is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Song not found")
+
+    try:
+        with conn:
+            cursor.execute("""INSERT INTO setlist_songs(setlist_id,song_id,position) Values (?,?,?)""", 
+                        (setlist_song.setlist_id,setlist_song.song_id, setlist_song.position))
+
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise HTTPException(status_code=409, detail="That position is already taken up in setlist")
+
+    new_id = cursor.lastrowid
+    conn.close()
+    return {"id": new_id, **setlist_song.model_dump()}
+
+@app.get("/setlist_songs")
+def get_all_setlist_songs():
+    conn = database.get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM setlist_songs")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+@app.delete("/setlist_songs/{setlist_song_id}")
+def delete_song_from_setlist(setlist_song_id:int):
+    conn = database.get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT setlist_id, song_id FROM setlist_songs WHERE id=?", (setlist_song_id,))
+    row = cursor.fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code = 404, detail= "Song not in Setlist")
+    setlist, song = row
+
+    with conn:
+        cursor.execute("DELETE FROM setlist_songs WHERE id = ?", (setlist_song_id,))
+
+    conn.close()
+    return {"detail":f"Song_id {song} succesfully deleted from setlist_id {setlist}" }

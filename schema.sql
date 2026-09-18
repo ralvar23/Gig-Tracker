@@ -32,8 +32,10 @@ CREATE TABLE IF NOT EXISTS setlist_songs(
     setlist_id INTEGER NOT NULL,
     song_id INTEGER NOT NULL,
     position INTEGER,
-    FOREIGN KEY (setlist_id) REFERENCES setlists(id),
-    FOREIGN KEY (song_id) REFERENCES songs(id)
+    FOREIGN KEY (setlist_id) REFERENCES setlists(id) ON DELETE CASCADE,
+    FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE,
+    UNIQUE(setlist_id, song_id)
+    UNIQUE(setlist_id, position)
     );
 
 
