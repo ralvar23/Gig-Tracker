@@ -46,6 +46,28 @@ def get_setlist(setlist_id : int):
         raise HTTPException(status_code=404,detail="Setlist not found")
     return dict(row)
 
+@app.get("/setlists/{setlist_id}/songs")
+def get_all_songs_from_setlist(setlist_id:int):
+    conn = database.get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM setlists WHERE id=?", (setlist_id,))
+    if cursor.fetchone() is None:
+        conn.close()
+        raise HTTPException(status_code= 404, detail="Setlist not found")
+    #joining setlist_songs with songs based on song id and retrieving all song columns,
+    #positions and setlist_song.id columns that match the setlist we want to query. Then
+    # we order the rows based on positions values
+    cursor.execute("""
+        SELECT songs.* , setlist_songs.position, setlist_songs.id AS setlist_song_id
+        FROM setlist_songs
+        JOIN songs ON setlist_songs.song_id = songs.id
+        WHERE setlist_songs.setlist_id = ?
+        ORDER BY setlist_songs.position""", (setlist_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+    
+
 #update a setlist
 @app.put("/setlists/{setlist_id}")
 def update_setlist(setlist_id: int, setlist:models.SetlistCreate):
@@ -239,7 +261,7 @@ def add_song_to_setlist(setlist_song: models.SetlistSongCreate):
     return {"id": new_id, **setlist_song.model_dump()}
 
 @app.get("/setlist_songs")
-def get_all_setlist_songs():
+def get_all_songs_in_setlists():
     conn = database.get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM setlist_songs")
@@ -264,3 +286,15 @@ def delete_song_from_setlist(setlist_song_id:int):
 
     conn.close()
     return {"detail":f"Song_id {song} succesfully deleted from setlist_id {setlist}" }
+
+@app.get("/setlist_songs/{setlist_song_id}/position")
+def get_song_from_setlist(setlist_song_id: int):
+    conn = database.get_db()
+    cursor = conn.cursor()
+    cursor.execute("""SELECT * FROM setlist_songs WHERE id=?""", (setlist_song_id,))
+    row = cursor.fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code = 404, detail="Song not found in setlist")
+    conn.close()
+    return dict(row)
