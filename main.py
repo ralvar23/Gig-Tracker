@@ -287,7 +287,7 @@ def delete_song_from_setlist(setlist_song_id:int):
     conn.close()
     return {"detail":f"Song_id {song} succesfully deleted from setlist_id {setlist}" }
 
-@app.get("/setlist_songs/{setlist_song_id}/position")
+@app.get("/setlist_songs/{setlist_song_id}")
 def get_song_from_setlist(setlist_song_id: int):
     conn = database.get_db()
     cursor = conn.cursor()
@@ -298,3 +298,35 @@ def get_song_from_setlist(setlist_song_id: int):
         raise HTTPException(status_code = 404, detail="Song not found in setlist")
     conn.close()
     return dict(row)
+
+@app.patch("/setlist_songs/{setlist_song_id}/position")
+def update_position(setlist_song_id:int, new_position:int):
+    conn = database.get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT setlist_id, position FROM setlist_songs WHERE id=?", (setlist_song_id,))
+    row = cursor.fetchone()
+    if row is None:
+        conn.close()
+        return HTTPException(status_code=404, detail="Entry not found")
+    setlist_id, old_position = row
+
+    if new_position == old_position:
+        conn.close()
+        return {"detail":"No position update"}
+
+    with conn:
+        cursor.execute("UPDATE setlist_songs SET position = -1 WHERE id =?", (setlist_song_id,))
+
+        if new_position < old_position:
+            cursor.execute("""UPDATE setlist_songs SET position = position + 1
+                WHERE setlist_id = ? AND position >=? AND position < ? """, (setlist_id, new_position, old_position))
+        else:
+            cursor.execute("""UPDATE setlist_songs SET position = position - 1
+                WHERE setlist_id =? AND position <= ? AND position >? """, (setlist_id, new_position, old_position))
+            
+        cursor.execute("UPDATE setlist_songs SET position = ? WHERE id =?", (new_position,setlist_song_id))
+
+    conn.close()
+
+    return {"detail": f"Song moved to position {new_position}"}
