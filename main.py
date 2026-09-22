@@ -2,6 +2,9 @@ from fastapi import FastAPI, HTTPException
 import models as models
 import database as database
 import sqlite3
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated= "auto" )
 app = FastAPI()
 
 #landing page
@@ -330,3 +333,36 @@ def update_position(setlist_song_id:int, new_position:int):
     conn.close()
 
     return {"detail": f"Song moved to position {new_position}"}
+
+
+@app.post("/users")
+def add_user(user: models.UserCreate):
+    conn = database.get_db()
+    cursor = conn.cursor() 
+
+    hashed_password = pwd_context.hash(user.password)
+
+    with conn:
+        cursor.execute("""INSERT INTO users(username, email, password_hash) VALUES (?,?,?)""", 
+            (user.username, user.email, hashed_password))
+
+    new_id = cursor.lastrowid
+
+    conn.close()
+
+    return {"id": new_id, "username": user.username, "email": user.email} 
+
+@app.post("/login")
+def login(credentials: models.UserLogin):
+    conn = database.get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE email =?", (credentials.email,))
+
+    user = cursor.fetchone()
+    conn.close()
+
+    if user is None or not pwd_context.verify(credentials.password, user["password_hash"]):
+        raise  HTTPException(status_code=401, detail="Invalid email or password")
+
+    return{"detail": "Login successful"}
